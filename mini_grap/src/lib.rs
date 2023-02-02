@@ -8,12 +8,22 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Result<Config, &'static str> {
-        let args: Vec<String> = env::args().collect();
-        if args.len() < 3 {
-            return Err("Not enough args");
-        }
+        let mut args = env::args();
+
+        // Discard first element
+        args.next();
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Query value is missing"),
+        };
+
+        let file_name = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Filename is missing"),
+        };
         let case_sensitive = env::var("CASE_SENSITIVE").is_err();
-        return Ok(Config { query: args[1].clone(), file_name: args[2].clone(), case_sensitive })
+        return Ok(Config { query, file_name, case_sensitive })
     }
 }
 
@@ -35,13 +45,7 @@ pub fn search_file(config: &Config) -> Result<(), Box<dyn Error>> {
 }
 
 fn search<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
-    let mut result = Vec::new();
-    for line in content.lines() {
-        if line.contains(query) {
-            result.push(line.trim());
-        }
-    }
-    result
+    content.lines().filter(|line| line.contains(query)).collect()
 }
 
 fn search_insensitive<'a>(query: &str, content: &'a str) -> Vec<&'a str> {
